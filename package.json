@@ -9,6 +9,8 @@
     "start": "npm run dev"
   },
   "dependencies": {
+    "@esotericsoftware/spine-webgl": "^4.2.11",
+    "ahooks": "^3.7.4",
     "umi": "^4.0.50"
   },
   "devDependencies": {
