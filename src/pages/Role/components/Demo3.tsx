@@ -28,12 +28,12 @@ const SpineAnimation3: React.FC<SpineAnimation3Props> = ({
     const delta = timeKeeperRef.current.delta;
 
     if (!skeleton) return;
+    gl?.clearColor(0.2, 0.2, 0.2, 1);
+    gl?.clear(gl.COLOR_BUFFER_BIT);
+
     animationState?.update(delta);
     animationState?.apply(skeleton);
     skeleton?.updateWorldTransform();
-
-    gl?.clearColor(0.2, 0.2, 0.2, 1);
-    gl?.clear(gl.COLOR_BUFFER_BIT);
 
     renderer?.resize(spine.ResizeMode.Fit);
     renderer?.begin();
@@ -54,9 +54,11 @@ const SpineAnimation3: React.FC<SpineAnimation3Props> = ({
     const atlasLoader = new spine.AtlasAttachmentLoader(atlas);
 
     const skeletonBinary = new spine.SkeletonBinary(atlasLoader);
+    skeletonBinary.scale = 0.4;
 
     const skeletonData = skeletonBinary.readSkeletonData(assetManager.get(skelPath));
     const skeleton = new spine.Skeleton(skeletonData);
+    skeleton.setSkinByName("full-skins/girl-blue-cape");
     setSkeleton(skeleton);
 
     const stateData = new spine.AnimationStateData(skeleton.data);
@@ -94,8 +96,8 @@ const Demo3: React.FC = () => {
   return (
     <div className={styles?.container}>
       <SpineAnimation3
-        atlasPath="/assets/spineboy-pma.atlas"
-        skelPath="/assets/spineboy-pro.skel"
+        atlasPath="/assets/mix-and-match-pma.atlas"
+        skelPath="/assets/mix-and-match-pro.skel"
         animationName="walk"
       />
       <div className={styles?.skins}>skins</div>
