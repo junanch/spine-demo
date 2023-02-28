@@ -8,7 +8,6 @@ interface AppProps {}
 
 const Demo: React.FC<AppProps> = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const skinsRef = useRef<HTMLDivElement>(null);
 
   const [atlas, setAtlas] = useState<spine.TextureAtlas>();
   const [skeletonData, setSkeletonData] = useState<spine.SkeletonData>();
@@ -178,8 +177,13 @@ const Demo: React.FC<AppProps> = () => {
 
   return (
     <div className={styles?.container}>
-      <canvas ref={canvasRef} className={styles?.canvas} />
-      <div ref={skinsRef} className={styles?.skins}>skins</div>
+      <div className={styles?.left}>
+        <canvas ref={canvasRef} className={styles?.canvas} />
+      </div>
+      <div className={styles?.right}>
+        <div className={styles?.skins}>skins</div>
+        <div className={styles?.animations}>animations</div>
+      </div>
     </div>
   )
 }

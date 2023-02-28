@@ -1,18 +1,29 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback, useImperativeHandle } from "react";
 import styles from '../index.less'
 import * as spine from "@esotericsoftware/spine-webgl";
 
-interface SpineAnimation3Props {
+type loadSkeletonChange = ({
+  skeleton
+}: {
+  skeleton: spine.Skeleton | null
+}) => void;
+
+interface SpineAnimationProps {
   atlasPath: string;
   skelPath: string;
   animationName: string;
+  loadSkeletonChange?: loadSkeletonChange;
 }
 
-const SpineAnimation3: React.FC<SpineAnimation3Props> = ({
+interface SpineAnimationRef {
+}
+
+const SpineAnimation = React.forwardRef<SpineAnimationRef, SpineAnimationProps>(({
   atlasPath,
   skelPath,
   animationName,
-}) => {
+  loadSkeletonChange,
+}, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const timeKeeperRef = useRef(new spine.TimeKeeper());
 
@@ -86,21 +97,53 @@ const SpineAnimation3: React.FC<SpineAnimation3Props> = ({
   // 参数变化时，重新渲染
   useEffect(() => {
     requestAnimationFrame(() => render());
+    loadSkeletonChange?.({
+      skeleton
+    })
   }, [skeleton, animationState, gl, renderer])
+  // 暴露给外部的方法
+  useImperativeHandle(ref, () => ({
+    setSkin: () => {
+      // remove old
+      // add new
+    },
+    setSkins: () => {
+      // remove old list
+      // remove new list
+    },
+    setAnimation: () => {
+    },
+  }))
 
   return <canvas ref={canvasRef} className={styles?.canvas} />
-}
+})
 
 
 const Demo3: React.FC = () => {
+  const [skins, setSkins] = useState<string[]>([])
+  const [animations, setAnimations] = useState<string[]>([])
+
   return (
     <div className={styles?.container}>
-      <SpineAnimation3
-        atlasPath="/assets/mix-and-match-pma.atlas"
-        skelPath="/assets/mix-and-match-pro.skel"
-        animationName="walk"
-      />
-      <div className={styles?.skins}>skins</div>
+      <div className={styles?.left}>
+        <SpineAnimation
+          atlasPath="/assets/mix-and-match-pma.atlas"
+          skelPath="/assets/mix-and-match-pro.skel"
+          animationName="walk"
+          loadSkeletonChange={({ skeleton }) => {
+            const { skins, animations } = skeleton?.data || {}
+            console.log('%c [ skins ]', 'font-size:14px; background:pink; color:#bf2c9f;', skins, animations)
+            const skinsNames = skins?.map?.(skin => skin?.name) || []
+            const animationsNames = animations?.map?.(animation => animation?.name) || []
+            setSkins(skinsNames)
+            setAnimations(animationsNames)
+          }}
+        />
+      </div>
+      <div className={styles?.right}>
+        <div className={styles?.skins}>skins</div>
+        <div className={styles?.animations}>animations</div>
+      </div>
     </div>
   )
 }

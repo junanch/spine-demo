@@ -103,13 +103,18 @@ const SpineAnimation3: React.FC<SpineAnimation3Props> = ({
 const Demo3: React.FC = () => {
   return (
     <div className={styles?.container}>
-      <SpineAnimation3
-        assetPath="/assets/"
-        fileName="spineboy-pro"
-        animationName="walk"
-        scale={0.3}
-      />
-      <div className={styles?.skins}>skins</div>
+      <div className={styles?.left}>
+        <SpineAnimation3
+          assetPath="/assets/"
+          fileName="spineboy-pro"
+          animationName="walk"
+          scale={0.3}
+        />
+      </div>
+      <div className={styles?.right}>
+        <div className={styles?.skins}>skins</div>
+        <div className={styles?.animations}>animations</div>
+      </div>
     </div>
     // <SpineAnimation
     //   imageUrl='/assets/mix-and-match-pma.png'
