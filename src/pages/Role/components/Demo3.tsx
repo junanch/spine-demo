@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback, useImperativeHandle } from "react";
 import styles from '../index.less'
-import * as spine from "@esotericsoftware/spine-webgl";
+import * as spine from "@esotericsoftware/spine-webgl"
+import classNames from 'classnames'
 
 type loadSkeletonChange = ({
   skeleton
@@ -122,7 +123,9 @@ const SpineAnimation = React.forwardRef<SpineAnimationRef, SpineAnimationProps>(
 const Demo3: React.FC = () => {
   const [skins, setSkins] = useState<spine.Skin[]>()
   const [animations, setAnimations] = useState<spine.Animation[]>()
-  console.log('%c [ render ]', 'font-size:14px; background:pink; color:#bf2c9f;', skins, animations)
+  const [activeSkin, setActiveSkin] = useState<spine.Skin>()
+  const [activeAnimation, setActiveAnimation] = useState<spine.Animation>()
+  console.log('%c [ render ]', 'font-size:14px; background:pink; color:#bf2c9f;', activeSkin, activeAnimation)
 
   return (
     <div className={styles?.container}>
@@ -139,17 +142,29 @@ const Demo3: React.FC = () => {
         />
       </div>
       <div className={styles?.right}>
-        <h2>换装</h2>
+        <h2>换装（{skins?.length || 0}）</h2>
         <ul className={styles?.skins}>
           {skins?.map?.((skin, index) => (
-            <li key={skin?.name}>{index}.{skin?.name}</li>
+            <li
+              key={skin?.name}
+              className={classNames({ [styles?.active]: skin?.name === activeSkin?.name })}
+              onClick={() => setActiveSkin(skin)}
+            >
+              {skin?.name}
+            </li>
           ))}
         </ul>
 
-        <h2>动画</h2>
+        <h2>动画（{animations?.length || 0}）</h2>
         <ul className={styles?.animations}>
           {animations?.map?.((animation, index) => (
-            <li key={animation?.name}>{index}.{animation?.name}</li>
+            <li
+              key={animation?.name}
+              className={classNames({ [styles?.active]: animation.name === activeAnimation?.name })}
+              onClick={() => setActiveAnimation(animation)}
+            >
+              {animation?.name}
+            </li>
           ))}
         </ul>
       </div>

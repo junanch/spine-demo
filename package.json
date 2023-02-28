@@ -11,6 +11,7 @@
   "dependencies": {
     "@esotericsoftware/spine-webgl": "^4.2.11",
     "ahooks": "^3.7.4",
+    "classnames": "^2.3.2",
     "umi": "^4.0.50"
   },
   "devDependencies": {
