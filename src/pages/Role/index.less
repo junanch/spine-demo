@@ -6,20 +6,50 @@
     border: 1px solid #000;
 
     .canvas {
-      width: 80vw;
+      width: 50vw;
       height: 80vh;
+      display: block;
     }
   }
 
   .right {
     border: 1px solid #000;
+    padding: 0 8px;
+    height: 80vh;
+    overflow-y: scroll;
 
     .skins {
-      border: 1px solid deeppink;
+      > li {
+        border-radius: 8px;
+        border: 1px dashed transparent;
+        padding: 0 6px;
+
+        & + li {
+          margin-top: 10px;
+        }
+
+        &:hover {
+          cursor: pointer;
+          border-color: deeppink;
+        }
+      }
     }
 
     .animations {
-      border: 1px solid greenyellow;
+      > li {
+        border-radius: 8px;
+        border: 1px dashed transparent;
+        padding: 0 6px;
+
+        & + li {
+          margin-top: 10px;
+        }
+
+        &:hover {
+          cursor: pointer;
+          border-color: deeppink;
+        }
+      }
     }
   }
 }

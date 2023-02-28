@@ -120,8 +120,9 @@ const SpineAnimation = React.forwardRef<SpineAnimationRef, SpineAnimationProps>(
 
 
 const Demo3: React.FC = () => {
-  const [skins, setSkins] = useState<string[]>([])
-  const [animations, setAnimations] = useState<string[]>([])
+  const [skins, setSkins] = useState<spine.Skin[]>()
+  const [animations, setAnimations] = useState<spine.Animation[]>()
+  console.log('%c [ render ]', 'font-size:14px; background:pink; color:#bf2c9f;', skins, animations)
 
   return (
     <div className={styles?.container}>
@@ -132,17 +133,25 @@ const Demo3: React.FC = () => {
           animationName="walk"
           loadSkeletonChange={({ skeleton }) => {
             const { skins, animations } = skeleton?.data || {}
-            console.log('%c [ skins ]', 'font-size:14px; background:pink; color:#bf2c9f;', skins, animations)
-            const skinsNames = skins?.map?.(skin => skin?.name) || []
-            const animationsNames = animations?.map?.(animation => animation?.name) || []
-            setSkins(skinsNames)
-            setAnimations(animationsNames)
+            setSkins(skins)
+            setAnimations(animations)
           }}
         />
       </div>
       <div className={styles?.right}>
-        <div className={styles?.skins}>skins</div>
-        <div className={styles?.animations}>animations</div>
+        <h2>换装</h2>
+        <ul className={styles?.skins}>
+          {skins?.map?.((skin, index) => (
+            <li key={skin?.name}>{index}.{skin?.name}</li>
+          ))}
+        </ul>
+
+        <h2>动画</h2>
+        <ul className={styles?.animations}>
+          {animations?.map?.((animation, index) => (
+            <li key={animation?.name}>{index}.{animation?.name}</li>
+          ))}
+        </ul>
       </div>
     </div>
   )
