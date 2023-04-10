@@ -1,16 +1,23 @@
 import React from 'react'
 import styles from './index.less'
+import classNames from 'classnames';
+import { history } from 'umi'
 
 const Roles: React.FC = () => {
   const roles = React.useMemo(() => {
     return [
       {
         id: 1,
-        name: 'Dress Up',
+        name: 'Demo1',
+        disable: true
       },
       {
         id: 2,
-        name: 'Skins',
+        name: 'Demo2',
+      },
+      {
+        id: 3,
+        name: 'Demo3'
       }
     ]
   }, [])
@@ -20,7 +27,18 @@ const Roles: React.FC = () => {
       <h2>Roles</h2>
       <ul className={styles?.roles}>
         {roles?.map?.((role) => (
-          <li key={role?.id}>
+          <li
+            key={role?.id}
+            className={classNames({ [styles?.disabled]: role?.disable })}
+            onClick={() => {
+              history.push({
+                pathname: '/role',
+                search: new URLSearchParams({
+                  id: role?.id.toString()
+                }).toString(),
+              })
+            }}
+          >
             <a>
               <div className={styles?.cover}></div>
               <div className={styles?.title}>{role?.name}</div>

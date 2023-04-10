@@ -154,46 +154,49 @@ const Demo3: React.FC = () => {
   }, [activeAnimation])
 
   return (
-    <div className={styles?.container}>
-      <div className={styles?.left}>
-        <SpineAnimation
-          spinRef={spineRef}
-          atlasPath="/assets/mix-and-match-pma.atlas"
-          skelPath="/assets/mix-and-match-pro.skel"
-          animationName="walk"
-          loadSkeletonChange={({ skeleton }) => {
-            const { skins, animations } = skeleton?.data || {}
-            setSkins(skins)
-            setAnimations(animations)
-          }}
-        />
-      </div>
-      <div className={styles?.right}>
-        <h2>换装（{skins?.length || 0}）</h2>
-        <ul className={styles?.skins}>
-          {skins?.map?.((skin, index) => (
-            <li
-              key={skin?.name}
-              className={classNames({ [styles?.active]: skin?.name === activeSkin?.name })}
-              onClick={() => setActiveSkin(skin)}
-            >
-              {skin?.name}
-            </li>
-          ))}
-        </ul>
+    <div>
+      <h2>Role 3</h2>
+      <div className={styles?.container}>
+        <div className={styles?.left}>
+          <SpineAnimation
+            spinRef={spineRef}
+            atlasPath="/assets/mix-and-match-pma.atlas"
+            skelPath="/assets/mix-and-match-pro.skel"
+            animationName="walk"
+            loadSkeletonChange={({ skeleton }) => {
+              const { skins, animations } = skeleton?.data || {}
+              setSkins(skins)
+              setAnimations(animations)
+            }}
+          />
+        </div>
+        <div className={styles?.right}>
+          <h2>换装（{skins?.length || 0}）</h2>
+          <ul className={styles?.skins}>
+            {skins?.map?.((skin, index) => (
+              <li
+                key={skin?.name}
+                className={classNames({ [styles?.active]: skin?.name === activeSkin?.name })}
+                onClick={() => setActiveSkin(skin)}
+              >
+                {skin?.name}
+              </li>
+            ))}
+          </ul>
 
-        <h2>动画（{animations?.length || 0}）</h2>
-        <ul className={styles?.animations}>
-          {animations?.map?.((animation, index) => (
-            <li
-              key={animation?.name}
-              className={classNames({ [styles?.active]: animation.name === activeAnimation?.name })}
-              onClick={() => setActiveAnimation(animation)}
-            >
-              {animation?.name}
-            </li>
-          ))}
-        </ul>
+          <h2>动画（{animations?.length || 0}）</h2>
+          <ul className={styles?.animations}>
+            {animations?.map?.((animation, index) => (
+              <li
+                key={animation?.name}
+                className={classNames({ [styles?.active]: animation.name === activeAnimation?.name })}
+                onClick={() => setActiveAnimation(animation)}
+              >
+                {animation?.name}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   )
