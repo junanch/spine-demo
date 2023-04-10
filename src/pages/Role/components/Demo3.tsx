@@ -13,18 +13,23 @@ interface SpineAnimationProps {
   atlasPath: string;
   skelPath: string;
   animationName: string;
+  spinRef?: React.MutableRefObject<SpinRef | undefined>
   loadSkeletonChange?: loadSkeletonChange;
 }
 
-interface SpineAnimationRef {
+export interface SpinRef {
+  setSkin?: (name: string) => void
+  setSkins?: () => void
+  setAnimation?: (name: string) => void 
 }
 
-const SpineAnimation = React.forwardRef<SpineAnimationRef, SpineAnimationProps>(({
+const SpineAnimation: React.FC<SpineAnimationProps> = ({
   atlasPath,
   skelPath,
   animationName,
+  spinRef,
   loadSkeletonChange,
-}, ref) => {
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const timeKeeperRef = useRef(new spine.TimeKeeper());
 
@@ -103,34 +108,56 @@ const SpineAnimation = React.forwardRef<SpineAnimationRef, SpineAnimationProps>(
     })
   }, [skeleton, animationState, gl, renderer])
   // 暴露给外部的方法
-  useImperativeHandle(ref, () => ({
-    setSkin: () => {
-      // remove old
-      // add new
+  useImperativeHandle(spinRef, () => ({
+    setSkin: (name) => {
+      // 1. 清除旧的皮肤，2. 添加新的皮肤
+      if (skeleton?.data) {
+        skeleton?.setSkinByName?.(name);
+        skeleton.setSlotsToSetupPose();
+        setSkeleton(skeleton);
+      }
     },
     setSkins: () => {
       // remove old list
       // remove new list
     },
-    setAnimation: () => {
+    setAnimation: (name) => {
+      // 1. 清除旧的动画，2. 添加新的动画
+      if (skeleton?.data) {
+			  skeleton.setToSetupPose();
+        animationState?.setAnimation?.(0, name, true);
+        setAnimationState(animationState)
+      }
     },
   }))
 
   return <canvas ref={canvasRef} className={styles?.canvas} />
-})
-
+}
 
 const Demo3: React.FC = () => {
+  const spineRef = useRef<SpinRef>()
+  // 换装列表
   const [skins, setSkins] = useState<spine.Skin[]>()
+  // 动画列表
   const [animations, setAnimations] = useState<spine.Animation[]>()
   const [activeSkin, setActiveSkin] = useState<spine.Skin>()
   const [activeAnimation, setActiveAnimation] = useState<spine.Animation>()
-  console.log('%c [ render ]', 'font-size:14px; background:pink; color:#bf2c9f;', activeSkin, activeAnimation)
+  useEffect(() => {
+    if (activeSkin?.name) {
+      spineRef.current?.setSkin?.(activeSkin?.name)
+    }
+  }, [activeSkin])
+  useEffect(() => {
+    if (activeAnimation?.name) {
+      spineRef.current?.setAnimation?.(activeAnimation?.name)
+    }
+  }, [activeAnimation])
 
   return (
     <div className={styles?.container}>
       <div className={styles?.left}>
         <SpineAnimation
+          spinRef={spineRef}
           atlasPath="/assets/mix-and-match-pma.atlas"
           skelPath="/assets/mix-and-match-pro.skel"
           animationName="walk"
