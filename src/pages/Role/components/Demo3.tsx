@@ -12,6 +12,7 @@ type loadSkeletonChange = ({
 interface SpineAnimationProps {
   atlasPath: string;
   skelPath: string;
+  skinName: string;
   animationName: string;
   spinRef?: React.MutableRefObject<SpinRef | undefined>
   loadSkeletonChange?: loadSkeletonChange;
@@ -26,6 +27,7 @@ export interface SpinRef {
 const SpineAnimation: React.FC<SpineAnimationProps> = ({
   atlasPath,
   skelPath,
+  skinName,
   animationName,
   spinRef,
   loadSkeletonChange,
@@ -75,7 +77,7 @@ const SpineAnimation: React.FC<SpineAnimationProps> = ({
 
     const skeletonData = skeletonBinary.readSkeletonData(assetManager.get(skelPath));
     const skeleton = new spine.Skeleton(skeletonData);
-    skeleton.setSkinByName("full-skins/girl-blue-cape");
+    skeleton.setSkinByName(skinName);
     setSkeleton(skeleton);
 
     const stateData = new spine.AnimationStateData(skeleton.data);
@@ -140,18 +142,18 @@ const Demo3: React.FC = () => {
   const [skins, setSkins] = useState<spine.Skin[]>()
   // 动画列表
   const [animations, setAnimations] = useState<spine.Animation[]>()
-  const [activeSkin, setActiveSkin] = useState<spine.Skin>()
-  const [activeAnimation, setActiveAnimation] = useState<spine.Animation>()
+  const [activeSkinName, setActiveSkinName] = useState('full-skins/girl-blue-cape')
+  const [activeAnimationName, setActiveAnimationName] = useState('walk')
   useEffect(() => {
-    if (activeSkin?.name) {
-      spineRef.current?.setSkin?.(activeSkin?.name)
+    if (activeSkinName) {
+      spineRef.current?.setSkin?.(activeSkinName)
     }
-  }, [activeSkin])
+  }, [activeSkinName])
   useEffect(() => {
-    if (activeAnimation?.name) {
-      spineRef.current?.setAnimation?.(activeAnimation?.name)
+    if (activeAnimationName) {
+      spineRef.current?.setAnimation?.(activeAnimationName)
     }
-  }, [activeAnimation])
+  }, [activeAnimationName])
 
   return (
     <div>
@@ -162,7 +164,8 @@ const Demo3: React.FC = () => {
             spinRef={spineRef}
             atlasPath="/assets/mix-and-match-pma.atlas"
             skelPath="/assets/mix-and-match-pro.skel"
-            animationName="walk"
+            skinName={activeSkinName}
+            animationName={activeAnimationName}
             loadSkeletonChange={({ skeleton }) => {
               const { skins, animations } = skeleton?.data || {}
               setSkins(skins)
@@ -176,8 +179,8 @@ const Demo3: React.FC = () => {
             {skins?.map?.((skin, index) => (
               <li
                 key={skin?.name}
-                className={classNames({ [styles?.active]: skin?.name === activeSkin?.name })}
-                onClick={() => setActiveSkin(skin)}
+                className={classNames({ [styles?.active]: skin?.name === activeSkinName })}
+                onClick={() => setActiveSkinName(skin?.name)}
               >
                 {skin?.name}
               </li>
@@ -189,8 +192,8 @@ const Demo3: React.FC = () => {
             {animations?.map?.((animation, index) => (
               <li
                 key={animation?.name}
-                className={classNames({ [styles?.active]: animation.name === activeAnimation?.name })}
-                onClick={() => setActiveAnimation(animation)}
+                className={classNames({ [styles?.active]: animation.name === activeAnimationName })}
+                onClick={() => setActiveAnimationName(animation?.name)}
               >
                 {animation?.name}
               </li>
