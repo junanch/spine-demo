@@ -1,190 +1,219 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback, useImperativeHandle } from "react";
 import styles from '../index.less'
-import * as spine from "@esotericsoftware/spine-webgl";
+import * as spine from "@esotericsoftware/spine-webgl"
+import classNames from 'classnames'
 
-const THUMBNAIL_SIZE = 100;
+type loadSkeletonChange = ({
+  skeleton
+}: {
+  skeleton: spine.Skeleton | null
+}) => void;
 
-interface AppProps {}
+interface SpineAnimationProps {
+  atlasPath: string;
+  skelPath: string;
+  skinName?: string;
+  animationName?: string;
+  spinRef?: React.MutableRefObject<SpinRef | undefined>
+  loadSkeletonChange?: loadSkeletonChange;
+}
 
-const Demo: React.FC<AppProps> = () => {
+export interface SpinRef {
+  setSkin?: (name: string) => void
+  setSkins?: () => void
+  setAnimation?: (name: string) => void 
+}
+
+const SpineAnimation: React.FC<SpineAnimationProps> = ({
+  atlasPath,
+  skelPath,
+  skinName = 'default',
+  animationName = 'default',
+  spinRef,
+  loadSkeletonChange,
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const timeKeeperRef = useRef(new spine.TimeKeeper());
 
-  const [atlas, setAtlas] = useState<spine.TextureAtlas>();
-  const [skeletonData, setSkeletonData] = useState<spine.SkeletonData>();
-  const [skeleton, setSkeleton] = useState<spine.Skeleton>();
-  const [state, setState] = useState<spine.AnimationState>();
-  const [selectedSkins, setSelectedSkins] = useState<string[]>([]);
-  const [skinThumbnails, setSkinThumbnails] = useState<{[key: string]: HTMLImageElement}>({});
-  const [lastBounds, setLastBounds] = useState<{
-    offset: spine.Vector2;
-    size: spine.Vector2;
-  }>({ offset: new spine.Vector2(), size: new spine.Vector2() });
+  const [gl, setGl] = useState<WebGLRenderingContext | null>(null); 
+  const [renderer, setRenderer] = useState<spine.SceneRenderer | null>(null);
+  const [skeleton, setSkeleton] = useState<spine.Skeleton | null>(null);
+  const [animationState, setAnimationState] = useState<spine.AnimationState | null>(null);
 
+  // 渲染循环执行
+  const render = useCallback(() => {
+    if (!skeleton || !animationState || !gl || !renderer) return
+    timeKeeperRef.current.update();
+    const delta = timeKeeperRef.current.delta;
+
+    if (!skeleton) return;
+    gl?.clearColor(0.2, 0.2, 0.2, 1);
+    gl?.clear(gl.COLOR_BUFFER_BIT);
+
+    animationState?.update(delta);
+    animationState?.apply(skeleton);
+    skeleton?.updateWorldTransform();
+
+    renderer?.resize(spine.ResizeMode.Fit);
+    renderer?.begin();
+    renderer?.drawSkeleton(skeleton, true);
+    renderer?.end();
+
+    requestAnimationFrame(() => render())
+  }, [skeleton, animationState, gl, renderer]);
+  // 加载资源完成后，生成 skeleton 和 animationState
+  const load = useCallback((assetManager: spine.AssetManager) => {
+    timeKeeperRef.current.update();
+    if (!assetManager?.isLoadingComplete()) {
+      requestAnimationFrame(() => load(assetManager));
+      return;
+    }
+
+    const atlas = assetManager.get(atlasPath);
+    const atlasLoader = new spine.AtlasAttachmentLoader(atlas);
+
+    const skeletonBinary = new spine.SkeletonBinary(atlasLoader);
+    skeletonBinary.scale = 0.4;
+    // const skeletonBinary = new spine.SkeletonJson(atlasLoader);
+    // skeletonBinary.scale = 0.4;
+
+    const skeletonData = skeletonBinary.readSkeletonData(assetManager.get(skelPath));
+    const skeleton = new spine.Skeleton(skeletonData);
+    // const [firstSkin] = skeleton?.data?.skins || []
+    skeleton.setSkinByName(skinName);
+    setSkeleton(skeleton);
+
+    const stateData = new spine.AnimationStateData(skeleton.data);
+    const animationState = new spine.AnimationState(stateData);
+    stateData.defaultMix = 0;
+    // const [firstAnimation] = skeleton?.data?.animations || []
+    animationState.setAnimation(0, animationName, true);
+    setAnimationState(animationState)
+  }, [render]);
+
+  // 挂载时，初始化 canvas，开始加载资源
   useEffect(() => {
     if (!canvasRef.current) return;
-
-    const canvas = new spine.SpineCanvas(canvasRef.current, {
-      pathPrefix: 'assets/',
-      app: {
-        loadAssets: (canvas: spine.SpineCanvas) => {
-          canvas.assetManager.loadTextureAtlas("mix-and-match-pma.atlas");
-          canvas.assetManager.loadBinary("mix-and-match-pro.skel");
-        },
-        initialize: (canvas: spine.SpineCanvas) => {
-          let assetManager = canvas.assetManager;
-          let atlas = canvas.assetManager.require("mix-and-match-pma.atlas");
-          let atlasLoader = new spine.AtlasAttachmentLoader(atlas);
-
-          let skeletonBinary = new spine.SkeletonBinary(atlasLoader);
-          let skeletonData = skeletonBinary.readSkeletonData(assetManager.require("mix-and-match-pro.skel"));
-          let skeleton = new spine.Skeleton(skeletonData);
-
-          let stateData = new spine.AnimationStateData(skeletonData);
-          let state = new spine.AnimationState(stateData);
-          state?.setAnimation?.(0, "dance", true);
-
-          let renderer = canvas.renderer;         
-				  let images = [];
-          let skinThumbnails: Record<string, any> = {};
-          let lastBounds: Record<string, any> = {}
-          for (var skin of skeletonData.skins) {
-            if (skin.name === "default") continue;
-
-            let image: HTMLImageElement  = new Image();
-            image.src = canvas.htmlCanvas.toDataURL();
-            // @ts-ignore
-            image.skinName = skin.name;
-            // @ts-ignore
-            image.isSet = false;
-            image.style.filter = "grayscale(1)";
-            images.push(image);
-            // @ts-ignore
-            skinThumbnails[image.skinName] = image;
-          }
-
-          const updateSkin = () => {
-            let newSkin = new spine.Skin("custom-skin");
-            for (var skinName of selectedSkins) {
-              const skinData = skeletonData?.findSkin?.(skinName)
-              if (skinData) {
-                newSkin.addSkin(skinData);
-              }
-            }
-            skeleton.setSkin(newSkin);
-            skeleton.setToSetupPose();
-            skeleton.updateWorldTransform();
-
-            let offset = new spine.Vector2(), size = new spine.Vector2();
-            skeleton.getBounds(offset, size);
-            lastBounds = { offset: offset, size: size };
-          }
-
-          const addSkin = (skinName: string) => {
-            if (selectedSkins.indexOf(skinName) != -1) return;
-            selectedSkins.push(skinName);
-            // let thumbnail = skinThumbnails[skinName];
-            // thumbnail.isSet = true;
-            // thumbnail.style.filter = "none";
-            updateSkin();
-          }
-
-          addSkin("skin-base");
-          addSkin("nose/short");
-          addSkin("eyelids/girly");
-          addSkin("eyes/violet");
-          addSkin("hair/brown");
-          addSkin("clothes/hoodie-orange");
-          addSkin("legs/pants-jeans");
-          addSkin("accessories/bag");
-          addSkin("accessories/hat-red-yellow");
-          setSkeleton(skeleton)
-          setState(state)
-          setSkeletonData(skeletonData)
-          setSelectedSkins(selectedSkins)
-        },
-        update: (canvas: spine.SpineCanvas, delta: number) => {
-          state?.update?.(delta);
-          if (skeleton) {
-            state?.apply?.(skeleton);
-            skeleton?.updateWorldTransform?.();
-          }
-        },
-        render: (canvas: spine.SpineCanvas) => {
-          let renderer = canvas.renderer;
-          // let camera = renderer.camera;
-          renderer.resize(spine.ResizeMode.Expand);
-          // let offset = this.lastBounds.offset, size = this.lastBounds.size;
-          // camera.position.x = offset.x + size.x / 2;
-          // camera.position.y = offset.y + size.y / 2;
-          // camera.zoom = size.x > size.y ? size.x / this.canvas.htmlCanvas.width * 1.1 : size.y / this.canvas.htmlCanvas.height * 1.1;
-          // camera.update();
-  
-          canvas.clear(0.2, 0.2, 0.2, 1);
-          renderer.begin();
-          if (skeleton) {
-            renderer.drawSkeleton(skeleton, true);
-          }
-          renderer.end();
-        }
-      }
-    });
+    let canvas = canvasRef.current;
+    canvas.width = canvas?.clientWidth || 100;
+    canvas.height = canvas?.clientHeight || 100;
+    const context = new spine.ManagedWebGLRenderingContext(canvas, { alpha: false });
+    setGl(context.gl)
+    setRenderer(new spine.SceneRenderer(canvas, context))
+    const assetManager = new spine.AssetManager(context);
+    assetManager?.loadTextureAtlas?.(atlasPath);
+    assetManager?.loadBinary?.(skelPath);
+    timeKeeperRef.current = new spine.TimeKeeper();
+    requestAnimationFrame(() => load(assetManager))
   }, []);
-
+  // 参数变化时，重新渲染
   useEffect(() => {
-    // if (!skeletonData) return;
+    requestAnimationFrame(() => render());
+    loadSkeletonChange?.({
+      skeleton
+    })
+  }, [skeleton, animationState, gl, renderer])
+  // 暴露给外部的方法
+  useImperativeHandle(spinRef, () => ({
+    setSkin: (name) => {
+      // 1. 清除旧的皮肤，2. 添加新的皮肤
+      if (skeleton?.data) {
+        skeleton?.setSkinByName?.(name);
+        skeleton.setSlotsToSetupPose();
+        setSkeleton(skeleton);
+      }
+    },
+    setSkins: () => {
+      // remove old list
+      // remove new list
+    },
+    setAnimation: (name) => {
+      // 1. 清除旧的动画，2. 添加新的动画
+      if (skeleton?.data) {
+			  skeleton.setToSetupPose();
+        animationState?.setAnimation?.(0, name, true);
+        setAnimationState(animationState)
+      }
+    },
+  }))
 
-    // setSkeleton(new spine.Skeleton(skeletonData));
+  return <canvas ref={canvasRef} className={styles?.canvas} />
+}
 
-    // const stateData = new spine.AnimationStateData(skeletonData);
-    // setState(new spine.AnimationState(stateData));
-    // state?.setAnimation?.(0, "dance", true);
-
-    // Create a default skin.
-    // addSkin("skin-base");
-    // addSkin("nose/short");
-    // addSkin("eyelids/girly");
-    // addSkin("eyes/violet");
-    // addSkin("hair/brown");
-    // addSkin("clothes/hoodie-orange");
-    // addSkin("legs/pants-jeans");
-    // addSkin("accessories/bag");
-    // addSkin("accessories/hat-red-yellow");
-
-    // Generate skin thumbnails
-    // let thumbnails: { [key: string]: HTMLImageElement } = {};
-    // for (const skin of skeletonData.skins) {
-    //   if (skin.name === "default") continue;
-
-    //   const thumbnail = document.createElement("img");
-    //   thumbnail.width = thumbnail.height = THUMBNAIL_SIZE;
-    //   thumbnail.style.filter = "grayscale(1)";
-    //   thumbnail.onclick = () => {
-    //     if (selectedSkins.indexOf(skin.name) !== -1) {
-    //       // removeSkin(skin.name);
-    //     } else {
-    //       // addSkin(skin.name);
-    //     }
-    //   };
-
-      // const renderer = canvasRef.current?.renderer;
-      // const camera = renderer?.camera;
-      // const oldWidth = canvasRef.current?.width;
-      // const oldHeight = canvasRef.current?.height;
-      // canvasRef.current.width = canvasRef.current.height = THUMBNAIL_SIZE;
-      // renderer?.gl.viewport(0,)
-    // }
-  }, [skeletonData]);
+const Demo3: React.FC = () => {
+  const spineRef = useRef<SpinRef>()
+  // 换装列表
+  const [skins, setSkins] = useState<spine.Skin[]>()
+  // 动画列表
+  const [animations, setAnimations] = useState<spine.Animation[]>()
+  const [activeSkinName, setActiveSkinName] = useState('full-skins/girl-blue-cape')
+  const [activeAnimationName, setActiveAnimationName] = useState('walk')
+  useEffect(() => {
+    if (activeSkinName) {
+      spineRef.current?.setSkin?.(activeSkinName)
+    }
+  }, [activeSkinName])
+  useEffect(() => {
+    if (activeAnimationName) {
+      spineRef.current?.setAnimation?.(activeAnimationName)
+    }
+  }, [activeAnimationName])
 
   return (
-    <div className={styles?.container}>
-      <div className={styles?.left}>
-        <canvas ref={canvasRef} className={styles?.canvas} />
-      </div>
-      <div className={styles?.right}>
-        <div className={styles?.skins}>skins</div>
-        <div className={styles?.animations}>animations</div>
+    <div>
+      <h2>Role 1</h2>
+      <div className={styles?.container}>
+        <div className={styles?.left}>
+          <SpineAnimation
+            spinRef={spineRef}
+            atlasPath="/assets/mix-and-match-pma.atlas"
+            skelPath="/assets/mix-and-match-pro.skel"
+            // atlasPath="/assets/woman3/skeleton.atlas"
+            // skelPath="/assets/woman3/skeleton.json"
+            // atlasPath="/assets/woman5/skeleton.atlas"
+            // skelPath="/assets/woman5/skeleton.skel"
+            // skinName={'guge/body'}
+            // animationName={'angry'}
+            skinName={activeSkinName}
+            animationName={activeAnimationName}
+            loadSkeletonChange={({ skeleton }) => {
+              console.log('%c [ change ]', 'font-size:14px; background:pink; color:#bf2c9f;', skeleton?.data)
+              const { skins, animations } = skeleton?.data || {}
+              setSkins(skins)
+              setAnimations(animations)
+            }}
+          />
+        </div>
+        <div className={styles?.right}>
+          <h2>换装（{skins?.length || 0}）</h2>
+          <ul className={styles?.skins}>
+            {skins?.map?.((skin, index) => (
+              <li
+                key={skin?.name}
+                className={classNames({ [styles?.active]: skin?.name === activeSkinName })}
+                onClick={() => setActiveSkinName(skin?.name)}
+              >
+                {skin?.name}
+              </li>
+            ))}
+          </ul>
+
+          <h2>动画（{animations?.length || 0}）</h2>
+          <ul className={styles?.animations}>
+            {animations?.map?.((animation, index) => (
+              <li
+                key={animation?.name}
+                className={classNames({ [styles?.active]: animation.name === activeAnimationName })}
+                onClick={() => setActiveAnimationName(animation?.name)}
+              >
+                {animation?.name}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   )
 }
-export default Demo;
+
+export default Demo3

@@ -10,10 +10,8 @@ const Roles: React.FC = () => {
       return <Demo1 />
     } else if (searchParams?.get('id') === '2') {
       return <Demo2 />
-    } else if (searchParams?.get('id') === '3') {
-      return <Demo3 />
     }
-    return <Demo3 />
+    return <Demo1 />
   }, [searchParams])
 
   return (

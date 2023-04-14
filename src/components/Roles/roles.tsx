@@ -9,16 +9,13 @@ const Roles: React.FC = () => {
       {
         id: 1,
         name: 'Demo1',
-        disable: true
+        disable: false
       },
       {
         id: 2,
         name: 'Demo2',
+        disable: false
       },
-      {
-        id: 3,
-        name: 'Demo3'
-      }
     ]
   }, [])
 

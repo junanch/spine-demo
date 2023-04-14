@@ -1,19 +1,36 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback, useImperativeHandle } from "react";
 import styles from '../index.less'
-import * as spine from "@esotericsoftware/spine-webgl";
+import * as spine from "@esotericsoftware/spine-webgl"
+import classNames from 'classnames'
 
-interface SpineAnimation3Props {
-  assetPath: string;
-  fileName: string;
-  animationName: string;
-  scale: number;
+type loadSkeletonChange = ({
+  skeleton
+}: {
+  skeleton: spine.Skeleton | null
+}) => void;
+
+interface SpineAnimationProps {
+  atlasPath: string;
+  skelPath: string;
+  skinName?: string;
+  animationName?: string;
+  spinRef?: React.MutableRefObject<SpinRef | undefined>
+  loadSkeletonChange?: loadSkeletonChange;
 }
 
-const SpineAnimation3: React.FC<SpineAnimation3Props> = ({
-  assetPath,
-  fileName,
+export interface SpinRef {
+  setSkin?: (name: string) => void
+  setSkins?: () => void
+  setAnimation?: (name: string) => void 
+}
+
+const SpineAnimation: React.FC<SpineAnimationProps> = ({
+  atlasPath,
+  skelPath,
+  skinName,
   animationName,
-  scale,
+  spinRef,
+  loadSkeletonChange,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const timeKeeperRef = useRef(new spine.TimeKeeper());
@@ -30,12 +47,12 @@ const SpineAnimation3: React.FC<SpineAnimation3Props> = ({
     const delta = timeKeeperRef.current.delta;
 
     if (!skeleton) return;
+    gl?.clearColor(0.2, 0.2, 0.2, 1);
+    gl?.clear(gl.COLOR_BUFFER_BIT);
+
     animationState?.update(delta);
     animationState?.apply(skeleton);
     skeleton?.updateWorldTransform();
-
-    gl?.clearColor(0.2, 0.2, 0.2, 1);
-    gl?.clear(gl.COLOR_BUFFER_BIT);
 
     renderer?.resize(spine.ResizeMode.Fit);
     renderer?.begin();
@@ -52,24 +69,23 @@ const SpineAnimation3: React.FC<SpineAnimation3Props> = ({
       return;
     }
 
-    const atlas = assetManager.get(
-      fileName.replace("-pro", "").replace("-ess", "") + "-pma.atlas"
-    );
+    const atlas = assetManager.get(atlasPath);
     const atlasLoader = new spine.AtlasAttachmentLoader(atlas);
 
     const skeletonBinary = new spine.SkeletonBinary(atlasLoader);
-    skeletonBinary.scale = scale;
+    skeletonBinary.scale = 0.3;
 
-    const skeletonData = skeletonBinary.readSkeletonData(
-      assetManager.get(fileName + ".skel")
-    );
+    const skeletonData = skeletonBinary.readSkeletonData(assetManager.get(skelPath));
     const skeleton = new spine.Skeleton(skeletonData);
+    const [firstSkin] = skeleton?.data?.skins || []
+    skeleton.setSkinByName(skinName || firstSkin?.name);
     setSkeleton(skeleton);
 
     const stateData = new spine.AnimationStateData(skeleton.data);
     const animationState = new spine.AnimationState(stateData);
     stateData.defaultMix = 0;
-    animationState.setAnimation(0, animationName, true);
+    const [firstAnimation] = skeleton?.data?.animations || []
+    animationState.setAnimation(0, animationName || firstAnimation?.name, true);
     setAnimationState(animationState)
   }, [render]);
 
@@ -82,46 +98,120 @@ const SpineAnimation3: React.FC<SpineAnimation3Props> = ({
     const context = new spine.ManagedWebGLRenderingContext(canvas, { alpha: false });
     setGl(context.gl)
     setRenderer(new spine.SceneRenderer(canvas, context))
-    const assetManager = new spine.AssetManager(context, assetPath);
-    assetManager?.loadTextureAtlas?.(
-      fileName.replace("-pro", "").replace("-ess", "") + "-pma.atlas"
-    );
-    assetManager?.loadBinary?.(fileName + ".skel");
+    const assetManager = new spine.AssetManager(context);
+    assetManager?.loadTextureAtlas?.(atlasPath);
+    assetManager?.loadBinary?.(skelPath);
     timeKeeperRef.current = new spine.TimeKeeper();
-    // requestAnimationFrame 函数调用完后会自动销毁
     requestAnimationFrame(() => load(assetManager))
   }, []);
   // 参数变化时，重新渲染
   useEffect(() => {
     requestAnimationFrame(() => render());
+    loadSkeletonChange?.({
+      skeleton
+    })
   }, [skeleton, animationState, gl, renderer])
+  // 暴露给外部的方法
+  useImperativeHandle(spinRef, () => ({
+    setSkin: (name) => {
+      // 1. 清除旧的皮肤，2. 添加新的皮肤
+      if (skeleton?.data) {
+        skeleton?.setSkinByName?.(name);
+        skeleton.setSlotsToSetupPose();
+        setSkeleton(skeleton);
+      }
+    },
+    setSkins: () => {
+      // remove old list
+      // remove new list
+    },
+    setAnimation: (name) => {
+      // 1. 清除旧的动画，2. 添加新的动画
+      if (skeleton?.data) {
+			  skeleton.setToSetupPose();
+        animationState?.setAnimation?.(0, name, true);
+        setAnimationState(animationState)
+      }
+    },
+  }))
 
   return <canvas ref={canvasRef} className={styles?.canvas} />
 }
 
-
 const Demo3: React.FC = () => {
+  const spineRef = useRef<SpinRef>()
+  // 换装列表
+  const [skins, setSkins] = useState<spine.Skin[]>()
+  // 动画列表
+  const [animations, setAnimations] = useState<spine.Animation[]>()
+  const [activeSkinName, setActiveSkinName] = useState('')
+  const [activeAnimationName, setActiveAnimationName] = useState('')
+  useEffect(() => {
+    if (activeSkinName) {
+      spineRef.current?.setSkin?.(activeSkinName)
+    }
+  }, [activeSkinName])
+  useEffect(() => {
+    if (activeAnimationName) {
+      spineRef.current?.setAnimation?.(activeAnimationName)
+    }
+  }, [activeAnimationName])
+
   return (
-    <div className={styles?.container}>
-      <div className={styles?.left}>
-        <SpineAnimation3
-          assetPath="/assets/"
-          fileName="spineboy-pro"
-          animationName="walk"
-          scale={0.3}
-        />
-      </div>
-      <div className={styles?.right}>
-        <div className={styles?.skins}>skins</div>
-        <div className={styles?.animations}>animations</div>
+    <div>
+      <h2>Role 2</h2>
+      <div className={styles?.container}>
+        <div className={styles?.left}>
+          <SpineAnimation
+            spinRef={spineRef}
+            atlasPath="/assets/woman/skeleton.atlas"
+            skelPath="/assets/woman/skeleton.skel"
+            skinName={activeSkinName}
+            animationName={activeAnimationName}
+            loadSkeletonChange={({ skeleton }) => {
+              const { skins, animations } = skeleton?.data || {}
+              setSkins(skins)
+              setAnimations(animations)
+              const [firstAnimation] = animations || []
+              const [firstSkin] = skins || []
+              if (!activeSkinName) {
+                setActiveSkinName(firstSkin?.name)
+              }
+              if (!activeAnimationName) {
+                setActiveAnimationName(firstAnimation?.name)
+              }
+            }}
+          />
+        </div>
+        <div className={styles?.right}>
+          <h2>换装（{skins?.length || 0}）</h2>
+          <ul className={styles?.skins}>
+            {skins?.map?.((skin, index) => (
+              <li
+                key={skin?.name}
+                className={classNames({ [styles?.active]: skin?.name === activeSkinName })}
+                onClick={() => setActiveSkinName(skin?.name)}
+              >
+                {skin?.name}
+              </li>
+            ))}
+          </ul>
+
+          <h2>动画（{animations?.length || 0}）</h2>
+          <ul className={styles?.animations}>
+            {animations?.map?.((animation, index) => (
+              <li
+                key={animation?.name}
+                className={classNames({ [styles?.active]: animation.name === activeAnimationName })}
+                onClick={() => setActiveAnimationName(animation?.name)}
+              >
+                {animation?.name}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
-    // <SpineAnimation
-    //   imageUrl='/assets/mix-and-match-pma.png'
-    //   atlasUrl='/assets/mix-and-match-pma.atlas'
-    //   jsonUrl='/assets/mix-and-match-pro.json'
-    //   animationName=""
-    // />
   )
 }
 
