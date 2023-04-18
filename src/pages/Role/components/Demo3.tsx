@@ -197,7 +197,7 @@ const Demo3: React.FC = () => {
             animationName={activeAnimationName}
             loadSkeletonChange={({ skeleton }) => {
               const { skins = [], animations = [] } = skeleton?.data || {}
-              const data: SkinsType = {
+              let newSkins: SkinsType = {
                 [Role.身体]: [],
                 [Role.脸部]: [],
                 [Role.头发]: [],
@@ -205,25 +205,25 @@ const Demo3: React.FC = () => {
               }
               for (let skin of skins) {
                 if (skin?.name?.includes(Role.身体)) {
-                  data[Role.身体].push(skin)
+                  newSkins[Role.身体].push(skin)
                 }
                 if (skin?.name?.includes(Role.脸部)) {
-                  data[Role.脸部].push(skin)
+                  newSkins[Role.脸部].push(skin)
                 }
                 if (skin?.name?.includes(Role.头发)) {
-                  data[Role.头发].push(skin)
+                  newSkins[Role.头发].push(skin)
                 }
                 if (skin?.name?.includes(Role.衣着)) {
-                  data[Role.衣着].push(skin)
+                  newSkins[Role.衣着].push(skin)
                 }
               }
-              setSkins(data)
-              // const bodys = skins?.filter?.((skin) => skin?.name?.includes(Role.身体))
-              // setSkins(bodys)
-              // const [firstSkin] = bodys || []
-              // if (!activeSkinName) {
-              //   setActiveSkinName(firstSkin?.name)
-              // }
+              setSkins(newSkins)
+              const [body] = newSkins[Role.身体]
+              const [face] = newSkins[Role.脸部]
+              const [hair] = newSkins[Role.头发]
+              const [cloth] = newSkins[Role.衣着]
+              setActiveSkinNames([body?.name, face?.name, hair?.name, cloth?.name])
+
               setAnimations(animations)
               const [firstAnimation] = animations || []
               if (!activeAnimationName) {
