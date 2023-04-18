@@ -7,5 +7,5 @@ export default defineConfig({
     { path: "/role", component: "Role" },
     { path: "/", redirect: "/role" },
   ],
-  npmClient: 'npm',
+  npmClient: 'yarn',
 });
