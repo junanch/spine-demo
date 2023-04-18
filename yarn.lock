@@ -693,17 +693,17 @@
   resolved "https://registry.yarnpkg.com/@esbuild/win32-x64/-/win32-x64-0.17.10.tgz#ac779220f2da96afd480fb3f3148a292f66e7fc3"
   integrity sha512-oP+zFUjYNaMNmjTwlFtWep85hvwUu19cZklB3QsBOcZSs6y7hmH4LNCJ7075bsqzYaNvZFXJlAVaQ2ApITDXtw==
 
-"@esotericsoftware/spine-core@^4.2.11":
+"@esotericsoftware/spine-core@^4.1.26":
   version "4.2.11"
   resolved "https://registry.yarnpkg.com/@esotericsoftware/spine-core/-/spine-core-4.2.11.tgz#d78d5e92382049298f738a3d172ed8d0f5acd36e"
   integrity sha512-yyieou3t6XNYNqbWDdGEkVBg2JAAjLrtrNxGIkweNaH38O4p5Z4pPw2r7BKhCkUEW6+TITYkbNslsGGPU3HMAw==
 
-"@esotericsoftware/spine-webgl@^4.2.11":
-  version "4.2.11"
-  resolved "https://registry.yarnpkg.com/@esotericsoftware/spine-webgl/-/spine-webgl-4.2.11.tgz#9d9088cc4bbddabba53c53a7ad9a8dbed3cd5f5d"
-  integrity sha512-DCk+Qp4QxzA3PCYpxtVxt1cChnDhs9AjvbzVtHkHE7nKyRnoYjH7JDghuyVvOEI8YJZS29vDD0rD7i22ne9QXg==
+"@esotericsoftware/spine-webgl@^4.1.26":
+  version "4.1.26"
+  resolved "https://registry.yarnpkg.com/@esotericsoftware/spine-webgl/-/spine-webgl-4.1.26.tgz#b9544389137d62348638b9ad3e9b278a06347a97"
+  integrity sha512-JyM/cSsfteC1Bj2h+3FpD7JBzrJNzlMoyRxlulRgcpU9Mq3qT81O62bMVpa5r1FNfPUFjmZPKmEyezEjDC659g==
   dependencies:
-    "@esotericsoftware/spine-core" "^4.2.11"
+    "@esotericsoftware/spine-core" "^4.1.26"
 
 "@floating-ui/core@^0.6.2":
   version "0.6.2"

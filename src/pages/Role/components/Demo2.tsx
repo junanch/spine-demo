@@ -138,7 +138,7 @@ const SpineAnimation: React.FC<SpineAnimationProps> = ({
   return <canvas ref={canvasRef} className={styles?.canvas} />
 }
 
-const Demo3: React.FC = () => {
+const Demo2: React.FC = () => {
   const spineRef = useRef<SpinRef>()
   // 换装列表
   const [skins, setSkins] = useState<spine.Skin[]>()
@@ -215,4 +215,4 @@ const Demo3: React.FC = () => {
   )
 }
 
-export default Demo3
+export default Demo2
